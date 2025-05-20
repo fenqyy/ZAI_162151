@@ -1,0 +1,22 @@
+{% extends "korty/index.html" %}
+
+{% block title %}Lokalizacje{% endblock %}
+
+{% block content %}
+
+        <table class="table table-sm ms-auto text-center">
+            <thead>
+            <tr>
+                <th scope="col">Miasto</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for lokalizacja in wszystkie_lokalizacje %}
+            <tr>
+                <td><a href="/lokalizacje/{{ lokalizacja.id }}/" style="text-decoration: none; color: black">{{ lokalizacja.miasto }}</a></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+{% endblock %}

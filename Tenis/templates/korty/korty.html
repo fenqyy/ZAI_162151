@@ -1,0 +1,36 @@
+{% extends "korty/index.html" %}
+
+{% block title %}Korty{% endblock %}
+
+{% block content %}
+    <table class="table table-sm ms-auto text-center">
+        <thead>
+            <tr>
+                <th scope="col">Nazwa kortu</th>
+                <th scope="col">Typ nawierzchni</th>
+                <th scope="col">Godziny otwarcia</th>
+                <th scope="col">Adres</th>
+                <th scope="col">#</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in korty_z_godzinami %}
+                <tr>
+                    <td>{{ item.kort.nazwa }}</td>
+                    <td>{{ item.kort.typ }}</td>
+                    <td>
+                        {% for godzina in item.godziny %}
+                            {{ godzina.dzien_tygodnia }}: {{ godzina.godzina_otwarcia }} - {{ godzina.godzina_zamkniecia }}<br>
+                        {% empty %}
+                            Brak danych
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {{ item.adres.adres }}
+                    </td>
+                    <td><button type="submit">Rezerwuj</button></td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
