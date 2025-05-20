@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from korty.models import *
 from rest_framework_simplejwt.tokens import RefreshToken
 
+
 class ProfilSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profil
@@ -61,6 +62,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class LokalizacjaSerializer(serializers.ModelSerializer):
     ile_kortow = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Lokalizacja
         fields = '__all__'
@@ -102,6 +104,7 @@ class RezerwacjaSerializer(serializers.ModelSerializer):
 
 
 class WydarzeniaSerializer(serializers.ModelSerializer):
+    ile_uczestnikow = serializers.IntegerField(read_only=True)
     class Meta:
         model = Wydarzenia
         fields = '__all__'

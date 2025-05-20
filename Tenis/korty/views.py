@@ -1,14 +1,14 @@
 from django.db.models import Count
 from rest_framework.generics import UpdateAPIView, CreateAPIView, DestroyAPIView, get_object_or_404, \
-    RetrieveUpdateAPIView
+    RetrieveUpdateAPIView, ListCreateAPIView
 from rest_framework.views import APIView
-from rest_framework import status, generics
+from rest_framework import status, generics, viewsets
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.models import User
 
-from .models import Lokalizacja, Profil, Kort
-from .serializers import UserSerializer, LokalizacjaSerializer, RezerwacjaSerializer
+from .models import Lokalizacja, Profil, Kort, Wydarzenia
+from .serializers import UserSerializer, LokalizacjaSerializer, RezerwacjaSerializer, WydarzeniaSerializer
 
 
 class UserListView(generics.ListAPIView):
@@ -61,19 +61,19 @@ class LocalizationView(APIView):
 
 
 class LocalizationUpdateView(RetrieveUpdateAPIView):
-    permission_classes = []
+    permission_classes = [IsAuthenticated]
     queryset = Lokalizacja.objects.all()
     serializer_class = LokalizacjaSerializer
 
 
 class LocalizationDeleteView(generics.RetrieveDestroyAPIView):
-    permission_classes = []
+    permission_classes = [IsAuthenticated]
     queryset = Lokalizacja.objects.all()
     serializer_class = LokalizacjaSerializer
 
 
 class LocalizationCreateView(generics.ListCreateAPIView):
-    permission_classes = []
+    permission_classes = [IsAuthenticated]
     queryset = Lokalizacja.objects.all()
     serializer_class = LokalizacjaSerializer
 
@@ -94,6 +94,18 @@ class ReservationView(CreateAPIView):
         kort = get_object_or_404(Kort, pk=self.kwargs['kort_pk'], lokalizacja=lokalizacja)
         profil = Profil.objects.get(user=self.request.user)
         serializer.save(kort=kort, profil=profil)
+
+
+class EventView(generics.ListCreateAPIView):
+    permission_classes = []
+    queryset = Wydarzenia.objects.annotate(ile_uczestnikow=Count('uczestnicy'))
+    serializer_class = WydarzeniaSerializer
+
+
+class EditEventView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = []
+    queryset = Wydarzenia.objects.all()
+    serializer_class = WydarzeniaSerializer
 
 
 
