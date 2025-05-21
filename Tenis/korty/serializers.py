@@ -7,7 +7,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 class ProfilSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profil
-        fields = ['telefon', 'avatar']
+        fields = ['user', 'telefon', 'avatar']
+    user = serializers.CharField(source='user.username', read_only=True)
+
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -84,7 +86,7 @@ class RezerwacjaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rezerwacja
         fields = '__all__'
-        read_only_fields = ['profil', 'kort']
+        read_only_fields = ['profil', 'kort', 'status']
 
     def validate(self, data):
         kort = self.context['kort']
@@ -92,19 +94,59 @@ class RezerwacjaSerializer(serializers.ModelSerializer):
         godzina_start = data['godzina_start']
         godzina_koniec = data['godzina_koniec']
 
-        istniejące_rezerwacje = Rezerwacja.objects.filter(kort=kort, data=data_rezerwacji)
+        kolizje = Rezerwacja.objects.filter(
+            kort=kort,
+            data=data_rezerwacji
+        ).exclude(
+            godzina_start__gte=godzina_koniec
+        ).exclude(
+            godzina_koniec__lte=godzina_start
+        )
 
-        for istniejąca in istniejące_rezerwacje:
-            if not (godzina_koniec <= istniejąca.godzina_start or godzina_start >= istniejąca.godzina_koniec):
-                raise serializers.ValidationError(
-                    f"Kort jest już zarezerwowany w tym czasie: od {istniejąca.godzina_start} do {istniejąca.godzina_koniec}."
-                )
+        if kolizje.exists():
+            raise serializers.ValidationError(
+                f"Kort jest już zarezerwowany w tym czasie."
+            )
+
+        dni_map = {
+            'monday': 'Poniedziałek',
+            'tuesday': 'Wtorek',
+            'wednesday': 'Środa',
+            'thursday': 'Czwartek',
+            'friday': 'Piątek',
+            'saturday': 'Sobota',
+            'sunday': 'Niedziela',
+        }
+        dzien_ang = data_rezerwacji.strftime('%A').lower()
+        dzien_pl = dni_map.get(dzien_ang)
+
+        godziny = GodzinyOtwarcia.objects.filter(kort=kort, dzien_tygodnia=dzien_pl)
+
+        if not godziny.exists():
+            raise serializers.ValidationError(
+                f"Kort nieczynny w dniu: {dzien_pl}"
+            )
+
+        start_dt = datetime.combine(data_rezerwacji, godzina_start)
+        koniec_dt = datetime.combine(data_rezerwacji, godzina_koniec)
+
+        for g in godziny:
+            otwarcie = datetime.combine(data_rezerwacji, g.godzina_otwarcia)
+            zamkniecie = datetime.combine(data_rezerwacji, g.godzina_zamkniecia)
+            if otwarcie <= start_dt and koniec_dt <= zamkniecie:
+                break
+        else:
+            raise serializers.ValidationError(
+                f"Rezerwacja poza godzinami otwarcia kortu."
+            )
 
         return data
 
 
 class WydarzeniaSerializer(serializers.ModelSerializer):
     ile_uczestnikow = serializers.IntegerField(read_only=True)
+    uczestnicy = ProfilSerializer(many=True, read_only=True)
+
     class Meta:
         model = Wydarzenia
         fields = '__all__'

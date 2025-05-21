@@ -66,6 +66,7 @@ class Rezerwacja(models.Model):
     data = models.DateField()
     godzina_start = models.TimeField(blank=True, null=True)
     godzina_koniec = models.TimeField(blank=True, null=True)
+
     STATUSY = [
         ("wolne", "Wolne"),
         ("zajete", "Zajęte"),
@@ -74,55 +75,14 @@ class Rezerwacja(models.Model):
 
     def save(self, *args, **kwargs):
         if self.godzina_start and self.godzina_koniec:
-            rezerwacje = Rezerwacja.objects.filter(kort=self.kort, data=self.data)
-            for rezerwacja in rezerwacje:
-                if not (
-                        self.godzina_koniec <= rezerwacja.godzina_start or self.godzina_start >= rezerwacja.godzina_koniec):
-                    raise ValidationError(
-                        f"Kort jest już zarezerwowany w tym czasie (od {rezerwacja.godzina_start} do {rezerwacja.godzina_koniec}).")
-
-        dni_tygodnia_map = {
-            'monday': 'Poniedziałek',
-            'tuesday': 'Wtorek',
-            'wednesday': 'Środa',
-            'thursday': 'Czwartek',
-            'friday': 'Piątek',
-            'saturday': 'Sobota',
-            'sunday': 'Niedziela',
-        }
-
-        dzien_tygodnia_ang = self.data.strftime('%A').lower()
-        dzien_tygodnia_pl = dni_tygodnia_map.get(dzien_tygodnia_ang)
-
-        if not dzien_tygodnia_pl:
-            raise ValidationError("Nie udało się odczytać dnia tygodnia.")
-
-        godziny_otwarcia = GodzinyOtwarcia.objects.filter(kort=self.kort, dzien_tygodnia=dzien_tygodnia_pl)
-
-        if not godziny_otwarcia.exists():
-            raise ValidationError(f"Kort nie jest otwarty w dniu {self.data.strftime('%A')}.")
-
-        godzina_start_obj = datetime.combine(self.data, self.godzina_start)
-        godzina_koniec_obj = datetime.combine(self.data, self.godzina_koniec)
-
-        for godzina in godziny_otwarcia:
-            godzina_otwarcia = datetime.combine(self.data, godzina.godzina_otwarcia)
-            godzina_zamkniecia = datetime.combine(self.data, godzina.godzina_zamkniecia)
-
-            if not (godzina_koniec_obj <= godzina_otwarcia or godzina_start_obj >= godzina_zamkniecia):
-                break
-        else:
-            raise ValidationError(
-                f"Rezerwacja nie mieści się w godzinach otwarcia kortu w dniu {self.data.strftime('%A')}.")
-
-        self.status = "zajete"
+            self.status = "zajete"
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Rezerwacja {self.kort} na {self.data} od {self.godzina_start} do {self.godzina_koniec}, status: {self.status}"
 
     class Meta:
-        verbose_name_plural = "Rezerwacja"
+        verbose_name_plural = "Rezerwacje"
 
 
 class Wydarzenia(models.Model):
